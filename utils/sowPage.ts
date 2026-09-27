@@ -18,6 +18,10 @@ export class SOWPage extends BasePage {
     await this.page
       .getByRole('link', { name: /Service Operations Workspace/ })
       .click();
-    await this.page.waitForLoadState('networkidle');
+
+    // 'networkidle' never resolves in SOW — it keeps polling for live data.
+    // Wait for the URL to shift to the SOW path instead, which is a reliable
+    // signal that the workspace has loaded and taken over navigation.
+    await this.page.waitForURL(/\/now\/sow\//, { timeout: 60_000 });
   }
 }

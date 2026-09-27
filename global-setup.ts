@@ -51,8 +51,12 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     // Click the login button and wait for navigation. 'networkidle' ensures
     // all post-login redirect XHRs (session setup, user preferences) complete
     // before we snapshot the storage state.
+    // Wait for navigation after login. ServiceNow fires background polling
+    // XHRs indefinitely after login, so 'networkidle' never resolves.
+    // 'load' is sufficient — it fires once the main document and its
+    // synchronous resources are ready, which is all we need to snapshot cookies.
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 60_000 }),
+      page.waitForNavigation({ waitUntil: 'load', timeout: 60_000 }),
       page.locator('#sysverb_login').click(),
     ]);
 
