@@ -1,0 +1,23 @@
+# ---- Confidential / secrets ----
+*.env
+.env
+.env.*
+IBMSGConfig.env
+
+# ---- Dependencies ----
+node_modules/
+
+# ---- Playwright artifacts ----
+test-results/
+playwright-report/
+blob-report/
+.playwright-cache/
+
+# ---- Output folder ----
+output/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
