@@ -21,3 +21,7 @@ output/
 Thumbs.db
 .vscode/
 *.log
+
+# ---- Auth session state (contains live tokens) ----
+.auth/
+dist/

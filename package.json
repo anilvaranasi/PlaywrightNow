@@ -1,20 +1,25 @@
 {
-  "name": "playwright",
+  "name": "playwrightnow",
   "version": "1.0.0",
-  "description": "",
+  "description": "Playwright E2E test suite for IBM ServiceNow environments",
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "codegen": "playwright codegen"
+    "test:incident": "playwright test tests/incident-test.spec.ts",
+    "test:sow": "playwright test tests/servicenow-sow.spec.ts",
+    "codegen": "playwright codegen",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
   },
   "dependencies": {
     "dotenv": "^18.0.4"
