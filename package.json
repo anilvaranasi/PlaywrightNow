@@ -1,14 +1,20 @@
 {
   "name": "playwrightnow",
   "version": "1.0.0",
-  "description": "Playwright E2E test suite for IBM ServiceNow environments",
+  "description": "Playwright E2E test suite for ServiceNow environments",
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:incident": "playwright test tests/incident-test.spec.ts",
-    "test:sow": "playwright test tests/servicenow-sow.spec.ts",
+    "test:sow": "playwright test tests/sow.spec.ts",
+    "test:now-assist": "playwright test tests/now-assist.spec.ts",
+    "test:now-assist-skills": "playwright test tests/now-assist-skills.spec.ts",
+    "test:skill-tests": "playwright test tests/now-assist-skill-tests.spec.ts",
+    "test:bdd": "cucumber-js --config cucumber.config.js",
+    "test:bdd:now-assist": "cucumber-js --config cucumber.config.js --tags @now-assist",
+    "test:bdd:skills": "cucumber-js --config cucumber.config.js --tags @skills",
     "codegen": "playwright codegen",
     "typecheck": "tsc --noEmit"
   },
@@ -17,8 +23,10 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@cucumber/cucumber": "^13.2.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.0"
   },
   "dependencies": {

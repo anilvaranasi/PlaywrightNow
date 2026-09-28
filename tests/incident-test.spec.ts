@@ -4,7 +4,7 @@
 // Prerequisites:
 //   - global-setup.ts has run and saved .auth/storageState.json.
 //   - playwright.config.ts sets storageState so this test starts logged in.
-//   - IBMSGConfig.env is present at the project root with valid credentials.
+//   - NowConfig.env is present at the project root with valid credentials.
 
 import { test, expect } from '@playwright/test';
 import { ServiceNowPage } from '../utils/servicenow-page';

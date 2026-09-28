@@ -3,8 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
-// Load environment variables from IBMSGConfig.env at project root.
-dotenv.config({ path: path.resolve(__dirname, 'IBMSGConfig.env') });
+// Load environment variables from NowConfig.env at project root.
+dotenv.config({ path: path.resolve(__dirname, 'NowConfig.env') });
 
 // Path where global-setup.ts will persist the authenticated session.
 export const STORAGE_STATE = path.resolve(__dirname, '.auth/storageState.json');

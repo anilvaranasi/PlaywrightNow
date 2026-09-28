@@ -1,8 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 
-// Load config from IBMSGConfig.env
-require('dotenv').config({ path: path.resolve(__dirname, '../IBMSGConfig.env') });
+// Load config from NowConfig.env
+require('dotenv').config({ path: path.resolve(__dirname, '../NowConfig.env') });
 
 const BASE_URL = process.env.SN_INSTANCE_URL;
 const USERNAME = process.env.SN_USERNAME;
