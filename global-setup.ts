@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: path.resolve(__dirname, 'IBMSGConfig.env') });
+dotenv.config({ path: path.resolve(__dirname, 'NowConfig.env') });
 
 const STORAGE_STATE_PATH = path.resolve(__dirname, '.auth/storageState.json');
 
@@ -20,7 +20,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   if (!baseURL || !username || !password) {
     throw new Error(
       'Missing required env vars: SN_INSTANCE_URL, SN_USERNAME, SN_PASSWORD. ' +
-      'Copy config/IBMSGConfig.env.example → IBMSGConfig.env and fill in values.'
+      'Copy config/NowConfig.env.example → NowConfig.env and fill in values.'
     );
   }
 
@@ -36,37 +36,31 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   const context = await browser.newContext();
   const page    = await context.newPage();
 
+  // global-setup runs outside playwright.config.ts so it does not inherit
+  // the configured navigationTimeout. Set it explicitly on the page.
+  page.setDefaultNavigationTimeout(90_000);
+  page.setDefaultTimeout(90_000);
+
   try {
     // ── Navigate to login page ─────────────────────────────────────────────
     await page.goto(`${baseURL}/login.do`, { waitUntil: 'domcontentloaded' });
 
     // ── Fill credentials ───────────────────────────────────────────────────
-    // ServiceNow classic login uses id-based inputs; #user_name / #user_password
-    // are stable across most SN versions. Using locator() + fill() avoids
-    // race conditions that page.type() can introduce on slower instances.
     await page.locator('#user_name').fill(username);
     await page.locator('#user_password').fill(password);
 
     // ── Submit ─────────────────────────────────────────────────────────────
-    // Click the login button and wait for navigation. 'networkidle' ensures
-    // all post-login redirect XHRs (session setup, user preferences) complete
-    // before we snapshot the storage state.
-    // Wait for navigation after login. ServiceNow fires background polling
-    // XHRs indefinitely after login, so 'networkidle' never resolves.
-    // 'load' is sufficient — it fires once the main document and its
-    // synchronous resources are ready, which is all we need to snapshot cookies.
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'load', timeout: 60_000 }),
       page.locator('#sysverb_login').click(),
     ]);
 
     // ── Verify login succeeded ─────────────────────────────────────────────
-    // If the URL still contains 'login.do' then credentials were rejected.
     const currentURL = page.url();
-    if (currentURL.includes('login.do')) {
+    if (currentURL.includes('login')) {
       throw new Error(
         `Login failed — still on login page: ${currentURL}. ` +
-        'Check SN_USERNAME and SN_PASSWORD in IBMSGConfig.env.'
+        'Check SN_USERNAME and SN_PASSWORD in NowConfig.env.'
       );
     }
 
