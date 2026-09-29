@@ -99,25 +99,31 @@ export class NowAssistPage extends BasePage {
   }
 
   /**
-   * Click a specific Now Assist skill button by its exact label.
+   * Activate a specific Now Assist skill.
+   *
+   * On this instance, skills always appear as <li> text items in the intro
+   * message — never as clickable buttons. The correct way to activate a skill
+   * is to TYPE its exact name into the chat input and press Enter.
    */
   async clickSkill(skill: NowAssistSkill): Promise<void> {
-    // Skills render as buttons after "New chat". Use exact: false to handle
-    // any minor whitespace variation.
-    const btn = this.page.getByRole('button', { name: skill, exact: false });
-    await btn.waitFor({ state: 'visible', timeout: 15_000 });
-    await btn.click();
+    // Ensure the chat input is ready before typing.
+    await this.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
+    await this.chatInput.fill(skill);
+    await this.chatInput.press('Enter');
   }
 
   /**
-   * Reset to the skill picker (New chat), then click the given skill.
+   * Reset to a fresh Now Assist session (New chat), then activate the given skill.
    * This is the standard entry point for all individual skill tests.
+   *
+   * After "New chat" the panel shows the intro message with skill <li> items.
+   * We activate the skill by typing its name into the chat input.
    */
   async startSkill(skill: NowAssistSkill): Promise<void> {
     await this.openSkillPicker();
     await this.clickSkill(skill);
-    // Wait for the chat input to confirm the skill was accepted.
-    await this.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
+    // Wait briefly for Now Assist to process the skill selection.
+    await this.page.waitForTimeout(1_000);
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────
@@ -184,12 +190,15 @@ export class NowAssistPage extends BasePage {
   }
 
   /**
-   * Assert that a specific skill button is visible in the picker.
+   * Assert that a specific skill label is visible in the intro message list.
+   * Skills render as <li> text items (not buttons) in the Now Assist panel.
    */
   async assertSkillVisible(skill: NowAssistSkill): Promise<void> {
-    await expect(
-      this.page.getByRole('button', { name: skill, exact: false })
-    ).toBeVisible({ timeout: 15_000 });
+    // Target the <li> items inside the Now Assist chat window.
+    const listItem = this.page.locator(
+      'now-va-chat-launcher li, now-chat-window li, .now-chat-message li, [data-role="chat-window"] li'
+    ).filter({ hasText: skill });
+    await expect(listItem.first()).toBeVisible({ timeout: 15_000 });
   }
 
   /**

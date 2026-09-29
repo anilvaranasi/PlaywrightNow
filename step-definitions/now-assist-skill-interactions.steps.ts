@@ -25,9 +25,12 @@ Given('I open the Now Assist skill picker', async function (this: ICustomWorld) 
 
 When('I click the Now Assist skill {string}', async function (this: ICustomWorld, skillName: string) {
   const nowAssist: NowAssistPage = (this as any).nowAssist ?? new NowAssistPage(this.page);
-  await nowAssist.clickSkill(skillName as NowAssistSkill);
+  // Skills are activated by typing their name, not clicking a button.
+  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
+  await nowAssist.chatInput.fill(skillName);
+  await nowAssist.chatInput.press('Enter');
   (this as any).nowAssist = nowAssist;
-  console.log(`🖱️  Clicked skill: ${skillName}`);
+  console.log(`⌨️  Activated skill: ${skillName}`);
 });
 
 When('I type {string} in the chat', async function (this: ICustomWorld, message: string) {

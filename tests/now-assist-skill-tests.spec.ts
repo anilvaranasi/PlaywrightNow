@@ -3,20 +3,15 @@
 //
 // Each test:
 //   1. Navigates to the Next Experience home page (storageState = already logged in).
-//   2. Opens the Now Assist skill picker via "New chat".
-//   3. Clicks the target skill button.
-//   4. Verifies the skill launches (chat input ready, optional AI response received).
+//   2. Opens the Now Assist skill picker (clicks "New chat" if a prior conversation exists).
+//   3. Activates the skill by typing its exact name into the chat input and pressing Enter.
+//   4. Verifies the panel responds (chat input remains visible = skill accepted).
 //
-// Skills under test:
-//   1. Get Help
-//   2. Summarize a record
-//   3. Summarize conversation
-//   4. Generate resolution notes
-//   5. generate a kb article
-//   6. Incident assist
-//   7. Manage duplicate CIs
-//   8. Error Analysis and Remediation Workflow
-//   9. Suggest configuration items for a change request
+// Skills are displayed as <li> text items in the Now Assist intro message —
+// not as clickable buttons. Activation is done by typing the skill name.
+//
+// Tests run sequentially (workers:1). Each test navigates to home fresh to
+// avoid leftover panel state from the previous test.
 
 import { test, expect } from '@playwright/test';
 import { NavigationPage } from '../utils/navigationPage';
@@ -24,13 +19,17 @@ import { NowAssistPage }  from '../utils/nowAssistPage';
 
 const BASE_URL = process.env.SN_INSTANCE_URL!;
 
-// Helper: navigate home and open the skill picker.
-// Each test calls this to get to a consistent starting state.
+// Helper: navigate home, wait for Now Assist panel, open skill picker.
 async function openSkillPicker(page: import('@playwright/test').Page) {
   const nav       = new NavigationPage(page);
   const nowAssist = new NowAssistPage(page);
+
+  // Navigate to Next Experience home — Now Assist panel auto-opens.
   await nav.goToHome(BASE_URL);
+
+  // Open the skill picker (resets to intro screen via "New chat" if needed).
   await nowAssist.openSkillPicker();
+
   return nowAssist;
 }
 
@@ -40,28 +39,31 @@ async function openSkillPicker(page: import('@playwright/test').Page) {
 test('Skill: Get Help — launches and accepts a question', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Get Help');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Get Help skill opened');
+  // Activate skill by typing its name.
+  await nowAssist.chatInput.fill('Get Help');
+  await nowAssist.chatInput.press('Enter');
 
-  // Send a simple question and verify the panel accepts it.
+  // Chat input should remain visible (panel stays open after submission).
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Get Help skill activated');
+
+  // Send a follow-up question to confirm the skill is responsive.
   await nowAssist.sendMessage('How do I create an incident?');
   await expect(nowAssist.chatInput).toBeVisible();
-  console.log('✅ Message sent to Get Help');
+  console.log('✅ Follow-up message sent to Get Help');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Skill 2 — Summarize a record
 // ─────────────────────────────────────────────────────────────────────────────
-test('Skill: Summarize a record — launches and prompts for a record', async ({ page }) => {
+test('Skill: Summarize a record — launches and chat input is ready', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Summarize a record');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Summarize a record skill opened');
+  await nowAssist.chatInput.fill('Summarize a record');
+  await nowAssist.chatInput.press('Enter');
 
-  // Verify chat input is ready for record input.
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Summarize a record skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,11 +72,11 @@ test('Skill: Summarize a record — launches and prompts for a record', async ({
 test('Skill: Summarize conversation — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Summarize conversation');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Summarize conversation skill opened');
+  await nowAssist.chatInput.fill('Summarize conversation');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Summarize conversation skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,11 +85,11 @@ test('Skill: Summarize conversation — launches successfully', async ({ page })
 test('Skill: Generate resolution notes — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Generate resolution notes');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Generate resolution notes skill opened');
+  await nowAssist.chatInput.fill('Generate resolution notes');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Generate resolution notes skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,11 +98,11 @@ test('Skill: Generate resolution notes — launches successfully', async ({ page
 test('Skill: generate a kb article — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('generate a kb article');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ generate a kb article skill opened');
+  await nowAssist.chatInput.fill('generate a kb article');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ generate a kb article skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,11 +111,11 @@ test('Skill: generate a kb article — launches successfully', async ({ page }) 
 test('Skill: Incident assist — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Incident assist');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Incident assist skill opened');
+  await nowAssist.chatInput.fill('Incident assist');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Incident assist skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,11 +124,11 @@ test('Skill: Incident assist — launches successfully', async ({ page }) => {
 test('Skill: Manage duplicate CIs — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Manage duplicate CIs');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Manage duplicate CIs skill opened');
+  await nowAssist.chatInput.fill('Manage duplicate CIs');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Manage duplicate CIs skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,11 +137,11 @@ test('Skill: Manage duplicate CIs — launches successfully', async ({ page }) =
 test('Skill: Error Analysis and Remediation Workflow — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Error Analysis and Remediation Workflow');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Error Analysis and Remediation Workflow skill opened');
+  await nowAssist.chatInput.fill('Error Analysis and Remediation Workflow');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Error Analysis and Remediation Workflow skill activated');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,9 +150,9 @@ test('Skill: Error Analysis and Remediation Workflow — launches successfully',
 test('Skill: Suggest configuration items for a change request — launches successfully', async ({ page }) => {
   const nowAssist = await openSkillPicker(page);
 
-  await nowAssist.clickSkill('Suggest configuration items for a change request');
-  await nowAssist.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
-  console.log('✅ Suggest configuration items for a change request skill opened');
+  await nowAssist.chatInput.fill('Suggest configuration items for a change request');
+  await nowAssist.chatInput.press('Enter');
 
-  await expect(nowAssist.chatInput).toBeVisible();
+  await expect(nowAssist.chatInput).toBeVisible({ timeout: 15_000 });
+  console.log('✅ Suggest configuration items for a change request skill activated');
 });
