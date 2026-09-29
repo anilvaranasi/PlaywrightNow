@@ -25,3 +25,5 @@ Thumbs.db
 # ---- Auth session state (contains live tokens) ----
 .auth/
 dist/
+
+.playwright-mcp/

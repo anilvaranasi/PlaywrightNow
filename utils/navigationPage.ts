@@ -10,7 +10,7 @@ export class NavigationPage extends BasePage {
   }
 
   async goToHome(baseURL: string): Promise<void> {
-    await this.page.goto(`${baseURL}/now/nav/ui/home`, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(`${baseURL}/now/sow/home`, { waitUntil: 'domcontentloaded' });
   }
 
   async openWorkspacesMenu(): Promise<void> {

@@ -56,11 +56,8 @@ Then('the available skills should be written to a file', async function (this: I
 });
 
 Then('the skill {string} should be visible', async function (this: ICustomWorld, skillName: string) {
-  // Skills render as <li> text items in the Now Assist intro message, not buttons.
-  const listItem = this.page.locator(
-    'now-va-chat-launcher li, now-chat-window li, .now-chat-message li, [data-role="chat-window"] li'
-  ).filter({ hasText: skillName });
-  await expect(listItem.first()).toBeVisible({ timeout: 15_000 });
+  const nowAssist: NowAssistPage = (this as any).nowAssist ?? new NowAssistPage(this.page);
+  await nowAssist.assertSkillVisible(skillName as any);
 
   console.log(`✅ Skill visible: ${skillName}`);
 });

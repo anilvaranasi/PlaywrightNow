@@ -17,9 +17,11 @@ Feature: Now Assist Individual Skill Interactions
     Then the message is accepted by Now Assist
 
   # ── Skill 2 ─────────────────────────────────────────────────────────────
-  Scenario: Summarize a record skill launches
+  Scenario: Summarize a record skill launches and processes a live record
     When I click the Now Assist skill "Summarize a record"
     Then the Now Assist chat input should be visible
+    When I provide a live incident number in the chat
+    Then the message is accepted by Now Assist
 
   # ── Skill 3 ─────────────────────────────────────────────────────────────
   Scenario: Summarize conversation skill launches
@@ -27,9 +29,11 @@ Feature: Now Assist Individual Skill Interactions
     Then the Now Assist chat input should be visible
 
   # ── Skill 4 ─────────────────────────────────────────────────────────────
-  Scenario: Generate resolution notes skill launches
+  Scenario: Generate resolution notes skill launches and processes a live record
     When I click the Now Assist skill "Generate resolution notes"
     Then the Now Assist chat input should be visible
+    When I provide a live incident number in the chat
+    Then the message is accepted by Now Assist
 
   # ── Skill 5 ─────────────────────────────────────────────────────────────
   Scenario: generate a kb article skill launches

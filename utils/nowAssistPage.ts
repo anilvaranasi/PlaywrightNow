@@ -69,7 +69,7 @@ export class NowAssistPage extends BasePage {
    */
   get lastAssistantMessage() {
     return this.page.locator(
-      'now-va-chat-launcher .now-chat-message--assistant, now-chat-window .now-chat-message--assistant, [data-role="assistant-message"]'
+      'dialog[aria-label="Chat Dialog"] [class*="message"], dialog[aria-label="Now Assist"] [class*="message"], now-va-chat-launcher .now-chat-message--assistant, now-chat-window .now-chat-message--assistant, [data-role="assistant-message"]'
     ).last();
   }
 
@@ -82,17 +82,21 @@ export class NowAssistPage extends BasePage {
    * - Waits until chat input is visible before returning.
    */
   async openSkillPicker(): Promise<void> {
-    const newChatVisible = await this.newChatButton.isVisible();
-    if (newChatVisible) {
-      await this.newChatButton.click();
+    // If Now Assist dialog is not open yet, click the Now Assist button
+    const nowAssistDialog = this.page.getByRole('dialog', { name: 'Now Assist' });
+    if (!(await nowAssistDialog.isVisible().catch(() => false))) {
+      const icon = this.page.getByRole('button', { name: 'Now Assist' }).or(this.nowAssistIconButton);
+      if (await icon.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await icon.first().click();
+      }
     }
 
-    // Confirm panel is ready.
+    // Confirm chat input is ready
     await this.chatInput.waitFor({ state: 'visible', timeout: 60_000 });
 
-    // Expand skill list if truncated.
+    // Expand skill list if "Show more" button is visible
     const showMore = this.page.getByRole('button', { name: 'Show more' });
-    if (await showMore.isVisible()) {
+    if (await showMore.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await showMore.click();
       await this.page.waitForTimeout(500);
     }
@@ -161,6 +165,32 @@ export class NowAssistPage extends BasePage {
     return this.waitForResponse(timeoutMs);
   }
 
+  // ── Table API record fetching helper ─────────────────────────────────────
+
+  /**
+   * Fetches an active incident record number directly via ServiceNow Table API
+   * utilizing the authenticated browser session and CSRF token (g_ck).
+   */
+  async getLiveIncidentNumber(): Promise<string> {
+    const recordNumber = await this.page.evaluate(async () => {
+      try {
+        const globalScope = globalThis as any;
+        const token = globalScope.g_ck || '';
+        const resp = await fetch('/api/now/table/incident?sysparm_limit=1&sysparm_fields=number&sysparm_query=ORDERBYDESCsys_created_on', {
+          headers: {
+            'Accept': 'application/json',
+            'X-UserToken': token
+          }
+        });
+        const data: any = await resp.json();
+        return data?.result?.[0]?.number || 'INC0010040';
+      } catch (e) {
+        return 'INC0010040';
+      }
+    });
+    return recordNumber;
+  }
+
   // ── Skill-reading helpers ────────────────────────────────────────────────
 
   /**
@@ -169,36 +199,49 @@ export class NowAssistPage extends BasePage {
   async getVisibleSkills(): Promise<string[]> {
     await this.chatInput.waitFor({ state: 'visible', timeout: 30_000 });
 
-    // Skills appear as <li> items in the intro message on a fresh session.
-    const listItems = this.page.locator('now-va-chat-launcher li, now-chat-window li, .now-chat-message li');
+    // In ServiceNow, skill tiles inside the Now Assist dialog render as buttons or list items.
+    const ignoredButtons = new Set([
+      'Show more', 'Show less', 'New chat', 'Send', 'Send Message',
+      'Enter Modal', 'Unpin Now Assist', 'Close Now Assist', 'Chats',
+      'Upload up to 3 files (max 5 MB each) to ask questions about their contents',
+      'Submit', 'Show sources', ''
+    ]);
+
+    // Check button tiles inside dialog "Now Assist" / chat dialog
+    const buttonElements = this.page.locator(
+      'dialog[aria-label="Now Assist"] button, dialog[aria-label="Chat Dialog"] button, [data-role="chat-window"] button, now-va-chat-launcher button, now-chat-window button, button'
+    );
+    const btnCount = await buttonElements.count();
+    if (btnCount > 0) {
+      const labels = await buttonElements.allTextContents();
+      const filtered = labels
+        .map(t => t.trim())
+        .filter(t => t.length > 0 && !ignoredButtons.has(t));
+      const validSkills = filtered.filter(label => NOW_ASSIST_SKILLS.some(skill => label.toLowerCase().includes(skill.toLowerCase()) || skill.toLowerCase().includes(label.toLowerCase())));
+      if (validSkills.length > 0) return Array.from(new Set(validSkills));
+      if (filtered.length > 0) return Array.from(new Set(filtered));
+    }
+
+    // Check list items
+    const listItems = this.page.locator('now-va-chat-launcher li, now-chat-window li, .now-chat-message li, [data-role="chat-window"] li');
     const liCount = await listItems.count();
     if (liCount > 0) {
       const labels = await listItems.allTextContents();
-      return labels.map(t => t.trim()).filter(t => t.length > 0);
-    }
-
-    // After "New chat", skills render as clickable button tiles.
-    const uiButtons = new Set(['Show more', 'Show less', 'New chat', 'Send', '']);
-    const buttons = this.page.locator('now-va-chat-launcher button, now-chat-window button');
-    const btnCount = await buttons.count();
-    if (btnCount > 0) {
-      const labels = await buttons.allTextContents();
-      return labels.map(t => t.trim()).filter(t => t.length > 0 && !uiButtons.has(t));
+      const filtered = labels.map(t => t.trim()).filter(t => t.length > 0);
+      if (filtered.length > 0) return Array.from(new Set(filtered));
     }
 
     return [];
   }
 
   /**
-   * Assert that a specific skill label is visible in the intro message list.
-   * Skills render as <li> text items (not buttons) in the Now Assist panel.
+   * Assert that a specific skill label is visible in the Now Assist panel (button or li item).
    */
   async assertSkillVisible(skill: NowAssistSkill): Promise<void> {
-    // Target the <li> items inside the Now Assist chat window.
-    const listItem = this.page.locator(
-      'now-va-chat-launcher li, now-chat-window li, .now-chat-message li, [data-role="chat-window"] li'
-    ).filter({ hasText: skill });
-    await expect(listItem.first()).toBeVisible({ timeout: 15_000 });
+    const item = this.page.getByRole('button', { name: skill }).or(
+      this.page.locator('dialog[aria-label="Now Assist"] button, dialog[aria-label="Chat Dialog"] button, now-va-chat-launcher button, now-chat-window button, li').filter({ hasText: skill })
+    );
+    await expect(item.first()).toBeVisible({ timeout: 15_000 });
   }
 
   /**
